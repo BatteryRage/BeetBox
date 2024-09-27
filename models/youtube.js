@@ -11,14 +11,20 @@ const Song = require('./song');
 
 const searchYoutube = async (query) => {
     // Search for YouTube videos
-    const response = await youtube.search.list({
-        part: 'id',
-        type: 'video',
-        q: query,
-    });
+    try {
+        const response = await youtube.search.list({
+            part: 'id',
+            type: 'video',
+            q: query,
+        });
 
-    // Get the first result
-    return response.data.items[0].id.videoId;
+        // Get the first result
+        return response.data.items[0].id.videoId;
+    }
+    catch (e) {
+        console.log(`Failed to search YouTube: ${e}`);
+        return null;
+    }
 };
 
 class Youtube extends Song {

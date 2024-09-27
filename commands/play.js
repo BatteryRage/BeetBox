@@ -2,7 +2,8 @@ const { SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 
 const { Youtube, searchYoutube } = require('../models/youtube');
-const Spotify = './models/spotify';
+const { getTrackName } = require('../models/spotify');
+const Song = require('../models/song');
 
 
 module.exports = {
@@ -47,18 +48,31 @@ module.exports = {
             }
 
             song = new Youtube(videoId);
-        } else {
+        } 
+        // Check if the query is a Spotify track URL
+        else if (query.includes('open.spotify.com/track')) {
+            // Find the song by title on youtube
+            song = new Youtube(await searchYoutube(await getTrackName(query.substring(query.lastIndexOf('/') + 1).split('?')[0])));
+        }
+        else {
             // Search for YouTube videos by keyword
-            // TODO something smart if there's no result
-            song = new Youtube(await searchYoutube(query));
+            const ytId = await searchYoutube(query);
+            if (ytId === null) {
+                song = {};
+                await interaction.editReply('An error occurred, you\'ve likely exceeded your YouTube search quota. Please try again later.');
+            }
+            else
+                song = new Youtube(ytId);
         }
 
-        song.connection = connection;
-        try {
-            global.queue.push(song, interaction);
-        }
-        catch (e) {
-            console.log(e);
+        if(song instanceof Song) {
+            song.connection = connection;
+            try {
+                global.queue.push(song, interaction);
+            }
+            catch (e) {
+                console.log(e);
+            }
         }
     }
 };
